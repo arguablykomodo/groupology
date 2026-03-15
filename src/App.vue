@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import Game from './components/Game.vue'
 
 const API_URL = `https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query=`
 
@@ -75,33 +76,6 @@ function shuffle(array) {
   }
 }
 
-const selectedItem = ref()
-
-function deselect() {
-  selectedItem.value = null
-}
-
-function selectItem(item) {
-  if (selectedItem.value == null) { // first item
-    selectedItem.value = item
-  } else if (item === selectedItem.value) { // select same item -> deselect
-    deselect()
-  } else { // 2 items selected
-    if (item.category === selectedItem.value.category) { // both items in the same category
-      score.value++
-      item.names.push(...selectedItem.value.names)
-
-      const indexToRemove = items.value.indexOf(selectedItem.value)
-      if (indexToRemove > -1) {
-        items.value.splice(indexToRemove, 1)
-      }
-    } else { // both items in different categories
-      mistakes.value++
-    }
-    deselect()
-  }
-}
-
 async function loadData() {
   try {
     const fetchPromises = Object.entries(queries).map(async ([key, query]) => {
@@ -137,26 +111,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <p>Make {{ group_amount }} groups of {{ group_size }}! (By combining two at a time.) Score: {{ score }} Mistakes: {{ mistakes }} </p>
-
-  <div v-if="items.length > 0">
-    <span v-for="item in items" :key="item.id">
-      <button class="item-button" :class="{
-        'selected': item === selectedItem,
-        'bold': item.names.length > 1
-      }" :title="item.names.join('\n')" :disabled="item.names.length >= group_size"
-        @click="selectItem(item)">
-        <template v-if="item.names.length >= group_size">
-          {{ item.category }}
-        </template>
-        <template v-else>
-          {{ item.names.slice(0, 3).join('\n') }}
-          <span v-if="item.names.length > 3"><br />...</span>
-          <span v-if="item.names.length > 2" class="count-text"><br /> [{{ item.names.length }}]</span>
-        </template>
-      </button>
-    </span>
-  </div>
+  <Game
+    :items="items"
+    :score="score"
+    :mistakes="mistakes"
+    :groupAmount="group_amount"
+    :groupSize="group_size"
+    @update:items="items = $event"
+    @update:score="score = $event"
+    @update:mistakes="mistakes = $event"
+  />
 </template>
 
 <style scoped>
