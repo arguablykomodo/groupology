@@ -8,6 +8,7 @@ const props = defineProps({
 })
 
 const currentGroupKey = ref(null)
+const editGroupName = ref('')
 const newCategoryName = ref('')
 const isFetching = ref(false)
 const sparqlQuery = ref(null)
@@ -20,6 +21,29 @@ function loadExampleQuery(queryText) {
 
 function selectGroup(key) {
     currentGroupKey.value = key
+    editGroupName.value = key
+}
+
+function renameGroup() {
+    const newName = editGroupName.value.trim()
+    const oldName = currentGroupKey.value
+
+    // if empty or hasn't changed, revert back and do nothing
+    if (!newName || newName === oldName) {
+        editGroupName.value = oldName
+        return
+    }
+
+    // prevent overwriting an existing group
+    if (props.groups[newName]) {
+        alert("A category with this name already exists!")
+        editGroupName.value = oldName
+        return
+    }
+
+    props.groups[newName] = props.groups[oldName]
+    delete props.groups[oldName]
+    currentGroupKey.value = newName
 }
 
 function addItem() {
@@ -39,7 +63,8 @@ function addCategory() {
             items: [],
             color: defaultColors[colorIndex]
         }
-        currentGroupKey.value = name
+
+        selectGroup(name)
         newCategoryName.value = ''
     }
 }
@@ -86,7 +111,11 @@ async function populateFromWikidata() {
             
             <div class="manual-column">
                 <div class="edit-header">
-                    <h3>Editing: {{ currentGroupKey }}</h3>
+                    <h3>Editing:</h3>
+
+                    <input v-model="editGroupName" class="group-name-input" title="Rename group" @blur="renameGroup"
+                        @keyup.enter="$event.target.blur()">
+
                     <input type="color" v-model="groups[currentGroupKey].color" class="color-picker"
                         title="Change group color">
                 </div>
@@ -158,6 +187,15 @@ async function populateFromWikidata() {
 
 .edit-header h3 {
     margin: 0;
+}
+
+.group-name-input {
+    font-size: 1.17em;
+    font-weight: bold;
+    padding: 2px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 200px;
 }
 
 .color-picker {
