@@ -48,7 +48,9 @@ function selectItem(item) {
 
 function initializeGame() {
     const flatItems = []
-    for (const [categoryName, elements] of Object.entries(props.groups)) {
+
+    for (const [categoryName, groupData] of Object.entries(props.groups)) {
+        const elements = groupData.items
 
         // Skip empty categories
         if (elements.length === 0) continue
@@ -59,7 +61,8 @@ function initializeGame() {
                 id: `${categoryName}-${index}`, // Give it a unique ID
                 category: categoryName,
                 names: [el], // Start with just itself
-                targetSize: elements.length // Store how big this specific group needs to get
+                targetSize: elements.length, // Store how big this specific group needs to get
+                color: groupData.color
             })
         })
     }
@@ -85,7 +88,10 @@ onMounted(() => {
             <button class="item-button" :class="{
                 'selected': item === selectedItem,
                 'bold': item.names.length > 1
-            }" :title="item.names.join('\n')" :disabled="item.names.length >= item.targetSize" @click="selectItem(item)">
+            }"
+                :style="item.names.length >= item.targetSize ? { backgroundColor: item.color } : {}"
+                :title="item.names.join('\n')" :disabled="item.names.length >= item.targetSize"
+                @click="selectItem(item)">
                 <template v-if="item.names.length >= item.targetSize">
                     {{ item.category }}
                 </template>

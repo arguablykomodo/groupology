@@ -12,6 +12,8 @@ const newCategoryName = ref('')
 const isFetching = ref(false)
 const sparqlQuery = ref(null)
 
+const defaultColors = ['#ffb3ba', '#ffdfba', '#ffffba', '#baffc9', '#bae1ff', '#e8baff', '#d4a5a5', '#9b89b3']
+
 function loadExampleQuery(queryText) {
     sparqlQuery.value = queryText
 }
@@ -21,17 +23,22 @@ function selectGroup(key) {
 }
 
 function addItem() {
-    props.groups[currentGroupKey.value].push('New Item')
+    props.groups[currentGroupKey.value].items.push('New Item')
 }
 
 function removeItem(index) {
-    props.groups[currentGroupKey.value].splice(index, 1)
+    props.groups[currentGroupKey.value].items.splice(index, 1)
 }
 
 function addCategory() {
     const name = newCategoryName.value.trim()
     if (name && !props.groups[name]) {
-        props.groups[name] = []
+        const colorIndex = Object.keys(props.groups).length % defaultColors.length
+
+        props.groups[name] = {
+            items: [],
+            color: defaultColors[colorIndex]
+        }
         currentGroupKey.value = name
         newCategoryName.value = ''
     }
@@ -47,8 +54,8 @@ async function populateFromWikidata() {
         const data = await response.json()
 
         const newItems = data.results.bindings.map(binding => binding.itemLabel.value)
-        props.groups[currentGroupKey.value].push(...newItems)
-        props.groups[currentGroupKey.value] = [...new Set(props.groups[currentGroupKey.value])]
+        props.groups[currentGroupKey.value].items.push(...newItems)
+        props.groups[currentGroupKey.value].items = [...new Set(props.groups[currentGroupKey.value].items)]
     } catch (error) {
         alert("Failed to fetch from Wikidata : " + error.message)
     } finally {
@@ -67,13 +74,10 @@ async function populateFromWikidata() {
         </div>
 
         <div class="categories-list">
-            <span v-for="(items, key) in groups" :key="key" class="category-item">
-                <button 
-                    class="btn" 
-                    :class="{ 'active-category': currentGroupKey === key }"
-                    @click="selectGroup(key)"
-                >
-                    {{ key }} ({{ items.length }})
+            <span v-for="(groupData, key) in groups" :key="key" class="category-item">
+                <button class="btn" :class="{ 'active-category': currentGroupKey === key }"
+                    :style="{ backgroundColor: groupData.color }" @click="selectGroup(key)">
+                    {{ key }} ({{ groupData.items.length }})
                 </button>
             </span>
         </div>
@@ -81,9 +85,14 @@ async function populateFromWikidata() {
         <div v-if="currentGroupKey" class="editor-layout">
             
             <div class="manual-column">
-                <h3>Editing: {{ currentGroupKey }}</h3>
-                <div v-for="(element, index) in groups[currentGroupKey]" :key="index" class="item-row">
-                    <input v-model="groups[currentGroupKey][index]">
+                <div class="edit-header">
+                    <h3>Editing: {{ currentGroupKey }}</h3>
+                    <input type="color" v-model="groups[currentGroupKey].color" class="color-picker"
+                        title="Change group color">
+                </div>
+
+                <div v-for="(element, index) in groups[currentGroupKey].items" :key="index" class="item-row">
+                    <input v-model="groups[currentGroupKey].items[index]">
                     <button class="btn remove-item-btn" @click="removeItem(index)">X</button>
                 </div>
                 <button class="btn add-item-btn" @click="addItem">+ Add Item</button>
@@ -138,6 +147,26 @@ async function populateFromWikidata() {
 
 .manual-column {
     flex: 1;
+}
+
+.edit-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.edit-header h3 {
+    margin: 0;
+}
+
+.color-picker {
+    cursor: pointer;
+    padding: 0;
+    border: none;
+    height: 30px;
+    width: 30px;
+    border-radius: 4px;
 }
 
 .item-row {

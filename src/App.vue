@@ -13,17 +13,17 @@ const requireEqualSizes = ref(false)
 
 const canPlay = computed(() => {
   const groups = Object.values(sharedGroups.value)
-
-  const categoriesWithTwoOrMore = groups.filter(group => group.length >= 2)
+  
+  const categoriesWithTwoOrMore = groups.filter(group => group.items.length >= 2)
   if (categoriesWithTwoOrMore.length < 2) {
     return false
   }
 
   if (requireEqualSizes.value) {
     if (groups.length === 0) return false
-    const firstGroupSize = groups[0].length
-    const allSameSize = groups.every(group => group.length === firstGroupSize)
-
+    const firstGroupSize = groups[0].items.length
+    const allSameSize = groups.every(group => group.items.length === firstGroupSize)
+    
     if (!allSameSize) return false
   }
 
